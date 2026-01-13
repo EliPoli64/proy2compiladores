@@ -1,0 +1,97 @@
+| ========
+| PROGRAMA
+| ========
+
+є
+Comentario
+multilínea
+э
+
+| ---------- variables globales ----------
+world int g_entero endl
+world float g_float = 2.5 endl
+world bool g_bool = true endl
+world char g_char = 'A' endl
+world string g_string = "Hola" endl
+world int¡2,2! g_matriz endl
+world char¡1,3! g_chars = ¡ 'X','Y','Z' ! endl
+
+| ---------- función con error ----------
+gift bool funcion1 () ¡ | error con los paréntesis
+    local int i = 0 endl
+
+    loop
+        ++i endl
+        exit when i > 3 endl
+    end loop endl
+
+    return true endl
+!
+
+| ---------- función con retorno ----------
+gift float funcionA ¿int a, float b? ¡
+    local float x = -b + a * 2 ^ 3 endl
+    ++a endl
+    --b endl
+
+    local bool r1 = a >= 10 endl
+    local bool r2 = b != 0.0 endl
+    local bool r3 = r1 @ r2 ~ false endl
+
+    decide of
+    ¿r3 -> ¡
+        show "OK" endl
+        return x endl
+    !?
+    ¿else -> ¡
+        return 0.0 endl
+    !?
+    end decide endl
+!
+
+
+| ---------- función booleana ----------
+gift bool funcionB ¿? ¡
+    local int i = 0 endl
+
+    loop
+        ++i endl
+        exit when i > 3 endl
+    end loop endl
+
+    return true endl
+!
+
+
+| ---------- procedimiento principal ----------
+coal navidad ¿? ¡
+
+    local int i endl
+    local float f = 1.5 endl
+    local bool b endl
+
+    get i endl
+    get f endl
+
+    g_matriz¡0,0! = i % 2 endl
+    g_matriz¡1,1! = i // 2 endl
+
+    local float r = funcionA ¿i, f? endl
+    b = funcionB ¿? endl
+
+    for i = 0 to 2 ¡
+        show i endl
+        break endl
+    ! endl
+
+    decide of
+    ¿¿i < 10? @ b -> ¡
+        show r endl
+    !?
+    ¿else -> ¡
+        show g_string endl
+    !?
+    end decide endl
+
+    return 0 endl
+!

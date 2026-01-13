@@ -1,0 +1,46 @@
+import java_cup.runtime.*;
+
+parser code {:
+    public parser(LexerProyUno s) {
+        super(s);
+    }
+:}
+
+terminal SEMI, COMMA, ASSIGN, PLUS, MINUS, TIMES, DIV_INT, DIV_FLOAT, MOD, POW, INC, DEC;
+terminal LT, LE, GT, GE, EQ, NE, AND, OR, NOT;
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, ENDL, COLON;
+
+terminal NAVIDAD, COAL, GIFT, WORLD, LOCAL, INT, FLOAT, BOOL, CHAR, STRING, VOID;
+terminal SHOW, GET, DECIDE, OF, ELSE, END, LOOP, EXIT, WHEN, FOR, RETURN, BREAK, TO;
+
+terminal Integer INTEGER_LITERAL;
+terminal Double FLOAT_LITERAL;
+terminal Boolean BOOLEAN_LITERAL;
+terminal Character CHAR_LITERAL;
+terminal String STRING_LITERAL, IDENTIFIER;
+
+non terminal program;
+non terminal statement_list, statement;
+non terminal expression;
+
+precedence left ASSIGN;
+precedence left OR;
+precedence left AND;
+precedence left EQ, NE;
+precedence left LT, LE, GT, GE;
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV_INT, DIV_FLOAT, MOD;
+precedence right POW;
+precedence right INC, DEC, NOT;
+
+statement_list ::= statement_list statement
+                 | statement
+                 ;
+
+statement ::= expression ENDL
+            | DECIDE OF LPAREN expression RPAREN statement_list ELSE statement_list END DECIDE ENDL
+            | LOOP statement_list EXIT WHEN expression END END LOOP ENDL
+            | FOR LPAREN expression SEMI expression SEMI expression RPAREN statement_list END FOR ENDL
+            | RETURN expression ENDL
+            | BREAK ENDL
+            ;
