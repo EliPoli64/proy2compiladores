@@ -1,10 +1,32 @@
 import java_cup.runtime.*;
+import java.util.HashMap;
+import java.util.ArrayList;
+
+action code {:
+    HashMap<String, ArrayList<String>> listaTablasSimbolos = new HashMap<String, ArrayList<String>>();
+    String currentHash;
+
+    public void imprimirTablaSimbolos() {
+        System.out.println("Tablas de Simbolos");
+        for (String hash : listaTablasSimbolos.keySet()) {
+            System.out.println("Tabla de simbolo: " + hash);
+            ArrayList<String> simbolos = listaTablasSimbolos.get(hash);
+            for (String simbolo : simbolos) {
+                System.out.println("  " + simbolo);
+            }
+        }
+    }
+:};
 
 parser code {:
+    LexerProyUno s;
     public parser(LexerProyUno s) {
         super(s);
+        this.symbolFactory = new DefaultSymbolFactory();
     }
 :}
+
+scan with {: return s.next_token(); :};
 
 terminal SEMI, COMMA, ASSIGN, PLUS, MINUS, TIMES, DIV_INT, DIV_FLOAT, MOD, POW, INC, DEC;
 terminal LT, LE, GT, GE, EQ, NE, AND, OR, NOT;
