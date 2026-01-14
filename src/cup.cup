@@ -8,10 +8,10 @@ parser code {:
 
 terminal SEMI, COMMA, ASSIGN, PLUS, MINUS, TIMES, DIV_INT, DIV_FLOAT, MOD, POW, INC, DEC;
 terminal LT, LE, GT, GE, EQ, NE, AND, OR, NOT;
-terminal LPAREN, RPAREN, LBRACKET, RBRACKET, ENDL, COLON;
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, ENDL;
 
 terminal NAVIDAD, COAL, GIFT, WORLD, LOCAL, INT, FLOAT, BOOL, CHAR, STRING, VOID;
-terminal SHOW, GET, DECIDE, OF, ELSE, END, LOOP, EXIT, WHEN, FOR, RETURN, BREAK, TO;
+terminal SHOW, GET, DECIDE, OF, ELSE, END, LOOP, EXIT, WHEN, FOR, RETURN, BREAK;
 
 terminal Integer INTEGER_LITERAL;
 terminal Double FLOAT_LITERAL;
@@ -20,8 +20,28 @@ terminal Character CHAR_LITERAL;
 terminal String STRING_LITERAL, IDENTIFIER;
 
 non terminal program;
-non terminal statement_list, statement;
+non terminal globales;
+non terminal funciones;
+non terminal funcion;
+non terminal parametros;
+non terminal listaParametros;
+non terminal tipo;
+non terminal navidad;
+non terminal bloque;
+non terminal listaInstr;
+non terminal instruccion;
+non terminal declaracionVariable;
+non terminal declaracionArray;
+non terminal arrayInit;
+non terminal decide;
+non terminal condicionesDecide;
+non terminal condicionDecide;
+non terminal loop;
+non terminal for_stmt;
 non terminal expression;
+non terminal usoArray;
+non terminal llamadaFuncion;
+non terminal listaArgumentos;
 
 precedence left ASSIGN;
 precedence left OR;
@@ -33,14 +53,610 @@ precedence left TIMES, DIV_INT, DIV_FLOAT, MOD;
 precedence right POW;
 precedence right INC, DEC, NOT;
 
-statement_list ::= statement_list statement
-                 | statement
-                 ;
+start with program;
 
-statement ::= expression ENDL
-            | DECIDE OF LPAREN expression RPAREN statement_list ELSE statement_list END DECIDE ENDL
-            | LOOP statement_list EXIT WHEN expression END END LOOP ENDL
-            | FOR LPAREN expression SEMI expression SEMI expression RPAREN statement_list END FOR ENDL
-            | RETURN expression ENDL
-            | BREAK ENDL
+program ::= globales:g funciones:f navidad:n {: 
+    NodoArbol result = new NodoArbol("program");
+    if (g != null) result.agregarHijo((NodoArbol)g);
+    if (f != null) result.agregarHijo((NodoArbol)f);
+    if (n != null) result.agregarHijo((NodoArbol)n);
+    RESULT = result;
+:};
+
+globales ::= 
+            {: 
+                NodoArbol result = new NodoArbol("globales");
+                RESULT = result;
+            :}
+          | globales:g WORLD declaracionVariable:dv ENDL {:
+                NodoArbol result = new NodoArbol("globales");
+                result.agregarHijo((NodoArbol)g);
+                result.agregarHijo(new NodoArbol("WORLD"));
+                result.agregarHijo((NodoArbol)dv);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+          :}
+          ;
+
+navidad ::= COAL NAVIDAD LPAREN RPAREN bloque:b {:
+                NodoArbol result = new NodoArbol("navidad");
+                result.agregarHijo(new NodoArbol("COAL"));
+                result.agregarHijo(new NodoArbol("NAVIDAD"));
+                result.agregarHijo(new NodoArbol("LPAREN"));
+                result.agregarHijo(new NodoArbol("RPAREN"));
+                result.agregarHijo((NodoArbol)b);
+                RESULT = result;
+          :};
+
+funciones ::= funcion:f {:
+                NodoArbol result = new NodoArbol("funciones");
+                result.agregarHijo((NodoArbol)f);
+                RESULT = result;
+              :}
+            | funciones:fs funcion:f {:
+                NodoArbol result = new NodoArbol("funciones");
+                result.agregarHijo((NodoArbol)fs);
+                result.agregarHijo((NodoArbol)f);
+                RESULT = result;
+              :}
             ;
+
+funcion ::= GIFT tipo:t IDENTIFIER:id parametros:p bloque:b ENDL {:
+                NodoArbol result = new NodoArbol("funcion");
+                result.agregarHijo(new NodoArbol("GIFT"));
+                result.agregarHijo((NodoArbol)t);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo((NodoArbol)p);
+                result.agregarHijo((NodoArbol)b);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+          :};
+
+parametros ::= LPAREN RPAREN {:
+                        NodoArbol result = new NodoArbol("parametros");
+                        result.agregarHijo(new NodoArbol("LPAREN"));
+                        result.agregarHijo(new NodoArbol("RPAREN"));
+                        RESULT = result;
+:};
+
+parametros ::= LPAREN listaParametros:lp RPAREN {:
+                        NodoArbol result = new NodoArbol("parametros");
+                        result.agregarHijo(new NodoArbol("LPAREN"));
+                        result.agregarHijo((NodoArbol)lp);
+                        result.agregarHijo(new NodoArbol("RPAREN"));
+                        RESULT = result;
+:};
+
+listaParametros ::= tipo:ti IDENTIFIER:id {:
+                        NodoArbol result = new NodoArbol("listaParametros");
+                        result.agregarHijo((NodoArbol)ti);
+                        result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                        RESULT = result;
+:};
+
+listaParametros ::= listaParametros:lp COMMA tipo:ti IDENTIFIER:id {:
+                        NodoArbol result = new NodoArbol("listaParametros");
+                        result.agregarHijo((NodoArbol)lp);
+                        result.agregarHijo(new NodoArbol("COMMA"));
+                        result.agregarHijo((NodoArbol)ti);
+                        result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                        RESULT = result;
+:};
+
+tipo ::= INT {: 
+                NodoArbol result = new NodoArbol("INT");
+                result.setLexema("int");
+                RESULT = result; 
+            :}
+       | FLOAT {: 
+                NodoArbol result = new NodoArbol("FLOAT");
+                result.setLexema("float");
+                RESULT = result; 
+            :}
+       | BOOL {: 
+                NodoArbol result = new NodoArbol("BOOL");
+                result.setLexema("bool");
+                RESULT = result; 
+            :}
+       | CHAR {: 
+                NodoArbol result = new NodoArbol("CHAR");
+                result.setLexema("char");
+                RESULT = result; 
+            :}
+       | STRING {: 
+                NodoArbol result = new NodoArbol("STRING");
+                result.setLexema("string");
+                RESULT = result; 
+            :}
+       | VOID {: 
+                NodoArbol result = new NodoArbol("VOID");
+                result.setLexema("void");
+                RESULT = result; 
+            :}
+       | INT LBRACKET INTEGER_LITERAL:i1 RBRACKET LBRACKET INTEGER_LITERAL:i2 RBRACKET {:
+                NodoArbol result = new NodoArbol("tipo_array");
+                result.agregarHijo(new NodoArbol("INT"));
+                result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i1.toString()));
+                result.agregarHijo(new NodoArbol("RBRACKET"));
+                result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i2.toString()));
+                result.agregarHijo(new NodoArbol("RBRACKET"));
+                RESULT = result;
+       :}
+       | CHAR LBRACKET INTEGER_LITERAL:i1 RBRACKET LBRACKET INTEGER_LITERAL:i2 RBRACKET {:
+                NodoArbol result = new NodoArbol("tipo_array");
+                result.agregarHijo(new NodoArbol("CHAR"));
+                result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i1.toString()));
+                result.agregarHijo(new NodoArbol("RBRACKET"));
+                result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i2.toString()));
+                result.agregarHijo(new NodoArbol("RBRACKET"));
+                RESULT = result;
+       :}
+       ;
+
+bloque ::= LBRACKET listaInstr:li RBRACKET {:
+                NodoArbol result = new NodoArbol("bloque");
+                result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo((NodoArbol)li);
+                result.agregarHijo(new NodoArbol("RBRACKET"));
+                RESULT = result;
+          :};
+
+listaInstr ::= instruccion:i {:
+                NodoArbol result = new NodoArbol("listaInstr");
+                result.agregarHijo((NodoArbol)i);
+                RESULT = result;
+              :};
+
+listaInstr ::= listaInstr:li instruccion:i {:
+                NodoArbol result = new NodoArbol("listaInstr");
+                result.agregarHijo((NodoArbol)li);
+                result.agregarHijo((NodoArbol)i);
+                RESULT = result;
+              :}
+            ;
+
+instruccion ::= declaracionVariable:dv ENDL {:
+                NodoArbol result = new NodoArbol("instruccion");
+                result.agregarHijo((NodoArbol)dv);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | expression:e ENDL {:
+                NodoArbol result = new NodoArbol("instruccion");
+                result.agregarHijo((NodoArbol)e);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | declaracionArray:da ENDL {:
+                NodoArbol result = new NodoArbol("instruccion");
+                result.agregarHijo((NodoArbol)da);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | SHOW LPAREN expression:e RPAREN ENDL {:
+                NodoArbol result = new NodoArbol("instruccion_show");
+                result.agregarHijo(new NodoArbol("SHOW"));
+                result.agregarHijo(new NodoArbol("LPAREN"));
+                result.agregarHijo((NodoArbol)e);
+                result.agregarHijo(new NodoArbol("RPAREN"));
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | GET LPAREN IDENTIFIER:id RPAREN ENDL {:
+                NodoArbol result = new NodoArbol("instruccion_get");
+                result.agregarHijo(new NodoArbol("GET"));
+                result.agregarHijo(new NodoArbol("LPAREN"));
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo(new NodoArbol("RPAREN"));
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | decide:d {:
+                NodoArbol result = new NodoArbol("instruccion");
+                result.agregarHijo((NodoArbol)d);
+                RESULT = result;
+              :}
+              | loop:l {:
+                NodoArbol result = new NodoArbol("instruccion");
+                result.agregarHijo((NodoArbol)l);
+                RESULT = result;
+              :}
+              | for_stmt:f {:
+                NodoArbol result = new NodoArbol("instruccion");
+                result.agregarHijo((NodoArbol)f);
+                RESULT = result;
+              :}
+              | RETURN expression:e ENDL {:
+                NodoArbol result = new NodoArbol("instruccion_return");
+                result.agregarHijo(new NodoArbol("RETURN"));
+                result.agregarHijo((NodoArbol)e);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | RETURN ENDL {:
+                NodoArbol result = new NodoArbol("instruccion_return");
+                result.agregarHijo(new NodoArbol("RETURN"));
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | BREAK ENDL {:
+                NodoArbol result = new NodoArbol("instruccion_break");
+                result.agregarHijo(new NodoArbol("BREAK"));
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              | ENDL {:
+                NodoArbol result = new NodoArbol("instruccion");
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+              :}
+              ;
+
+declaracionVariable ::= LOCAL tipo:t IDENTIFIER:id {:
+                NodoArbol result = new NodoArbol("declaracionVariable_local");
+                result.agregarHijo(new NodoArbol("LOCAL"));
+                result.agregarHijo((NodoArbol)t);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                RESULT = result;
+              :}
+              | LOCAL tipo:t IDENTIFIER:id ASSIGN expression:e {:
+                NodoArbol result = new NodoArbol("declaracionVariable_local_asign");
+                result.agregarHijo(new NodoArbol("LOCAL"));
+                result.agregarHijo((NodoArbol)t);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo(new NodoArbol("ASSIGN"));
+                result.agregarHijo((NodoArbol)e);
+                RESULT = result;
+              :}
+              | tipo:t IDENTIFIER:id {:
+                NodoArbol result = new NodoArbol("declaracionVariable");
+                result.agregarHijo((NodoArbol)t);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                RESULT = result;
+              :}
+              | tipo:t IDENTIFIER:id ASSIGN expression:e {:
+                NodoArbol result = new NodoArbol("declaracionVariable_asign");
+                result.agregarHijo((NodoArbol)t);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo(new NodoArbol("ASSIGN"));
+                result.agregarHijo((NodoArbol)e);
+                RESULT = result;
+              :}
+              ;
+
+declaracionArray ::= LOCAL tipo:t IDENTIFIER:id ASSIGN LBRACKET arrayInit:ai RBRACKET {:
+                NodoArbol result = new NodoArbol("declaracionArray_local");
+                result.agregarHijo(new NodoArbol("LOCAL"));
+                result.agregarHijo((NodoArbol)t);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo(new NodoArbol("ASSIGN"));
+                result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo((NodoArbol)ai);
+                result.agregarHijo(new NodoArbol("RBRACKET"));
+                RESULT = result;
+              :}
+              | tipo:t IDENTIFIER:id ASSIGN LBRACKET arrayInit:ai RBRACKET {:
+                NodoArbol result = new NodoArbol("declaracionArray");
+                result.agregarHijo((NodoArbol)t);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo(new NodoArbol("ASSIGN"));
+                result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo((NodoArbol)ai);
+                result.agregarHijo(new NodoArbol("RBRACKET"));
+                RESULT = result;
+              :}
+              ;
+
+arrayInit ::= expression:e {:
+                NodoArbol result = new NodoArbol("arrayInit");
+                result.agregarHijo((NodoArbol)e);
+                RESULT = result;
+              :}
+            | arrayInit:ai COMMA expression:e {:
+                NodoArbol result = new NodoArbol("arrayInit");
+                result.agregarHijo((NodoArbol)ai);
+                result.agregarHijo(new NodoArbol("COMMA"));
+                result.agregarHijo((NodoArbol)e);
+                RESULT = result;
+              :}
+            ;
+
+decide ::= DECIDE OF condicionesDecide:cd ELSE bloque:b END DECIDE ENDL {:
+                NodoArbol result = new NodoArbol("decide_with_else");
+                result.agregarHijo(new NodoArbol("DECIDE"));
+                result.agregarHijo(new NodoArbol("OF"));
+                result.agregarHijo((NodoArbol)cd);
+                result.agregarHijo(new NodoArbol("ELSE"));
+                result.agregarHijo((NodoArbol)b);
+                result.agregarHijo(new NodoArbol("END"));
+                result.agregarHijo(new NodoArbol("DECIDE"));
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+          :}
+         | DECIDE OF condicionesDecide:cd END DECIDE ENDL {:
+                NodoArbol result = new NodoArbol("decide");
+                result.agregarHijo(new NodoArbol("DECIDE"));
+                result.agregarHijo(new NodoArbol("OF"));
+                result.agregarHijo((NodoArbol)cd);
+                result.agregarHijo(new NodoArbol("END"));
+                result.agregarHijo(new NodoArbol("DECIDE"));
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+          :}
+         ;
+
+condicionesDecide ::= condicionDecide:cd {:
+                NodoArbol result = new NodoArbol("condicionesDecide");
+                result.agregarHijo((NodoArbol)cd);
+                RESULT = result;
+              :}
+                    | condicionesDecide:cds condicionDecide:cd {:
+                NodoArbol result = new NodoArbol("condicionesDecide");
+                result.agregarHijo((NodoArbol)cds);
+                result.agregarHijo((NodoArbol)cd);
+                RESULT = result;
+              :}
+                    ;
+
+condicionDecide ::= expression:e bloque:b {:
+                NodoArbol result = new NodoArbol("condicionDecide");
+                result.agregarHijo((NodoArbol)e);
+                result.agregarHijo((NodoArbol)b);
+                RESULT = result;
+              :};
+
+loop ::= LOOP listaInstr:li EXIT WHEN expression:e ENDL END LOOP ENDL {:
+                NodoArbol result = new NodoArbol("loop");
+                result.agregarHijo(new NodoArbol("LOOP"));
+                result.agregarHijo((NodoArbol)li);
+                result.agregarHijo(new NodoArbol("EXIT"));
+                result.agregarHijo(new NodoArbol("WHEN"));
+                result.agregarHijo((NodoArbol)e);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                result.agregarHijo(new NodoArbol("END"));
+                result.agregarHijo(new NodoArbol("LOOP"));
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+          :};
+
+for_stmt ::= FOR LPAREN expression:e1 SEMI expression:e2 SEMI expression:e3 RPAREN bloque:b ENDL {:
+                NodoArbol result = new NodoArbol("for_stmt");
+                result.agregarHijo(new NodoArbol("FOR"));
+                result.agregarHijo(new NodoArbol("LPAREN"));
+                result.agregarHijo((NodoArbol)e1);
+                result.agregarHijo(new NodoArbol("SEMI"));
+                result.agregarHijo((NodoArbol)e2);
+                result.agregarHijo(new NodoArbol("SEMI"));
+                result.agregarHijo((NodoArbol)e3);
+                result.agregarHijo(new NodoArbol("RPAREN"));
+                result.agregarHijo((NodoArbol)b);
+                result.agregarHijo(new NodoArbol("ENDL"));
+                RESULT = result;
+          :};
+
+/* Expresiones (ya proporcionadas anteriormente) */
+expression ::= expression:e1 PLUS expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("+");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 MINUS expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("-");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 GE expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol(">=");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 EQ expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("==");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 TIMES expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("*");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 DIV_INT expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("//");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 POW expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("^");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 LT expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("<");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 DIV_FLOAT expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("/");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 LE expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("<=");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 MOD expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("%");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 GT expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol(">");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 NE expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("!=");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 AND expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("@");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| expression:e1 OR expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("~");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| NOT expression:e1 {:
+                            NodoArbol hijoExpr = (NodoArbol)e1;
+                            NodoArbol result = new NodoArbol("Σ");
+                            result.agregarHijo(hijoExpr);
+                            RESULT = result;
+:}
+| MINUS expression:e1 {:
+                            NodoArbol hijoExpr = (NodoArbol)e1;
+                            NodoArbol result = new NodoArbol("MINUS");
+                            result.agregarHijo(hijoExpr);
+                            RESULT = result;
+:}
+| INC expression:e1 {:
+                            NodoArbol hijoExpr = (NodoArbol)e1;
+                            NodoArbol result = new NodoArbol("++");
+                            result.agregarHijo(hijoExpr);
+                            RESULT = result;
+:}
+| DEC expression:e1 {:
+                            NodoArbol hijoExpr = (NodoArbol)e1;
+                            NodoArbol result = new NodoArbol("--");
+                            result.agregarHijo(hijoExpr);
+                            RESULT = result;
+:}
+| expression:e1 ASSIGN expression:e2 {:
+                            NodoArbol hijoIzq = (NodoArbol)e1;
+                            NodoArbol hijoDer = (NodoArbol)e2;
+                            NodoArbol result = new NodoArbol("=");
+                            result.agregarHijo(hijoIzq);
+                            result.agregarHijo(hijoDer);
+                            RESULT = result;
+:}
+| LPAREN expression:e1 RPAREN {:
+                            NodoArbol hijoExpr = (NodoArbol)e1;
+                            NodoArbol result = new NodoArbol("()");
+                            result.agregarHijo(new NodoArbol("¿"));
+                            result.agregarHijo(hijoExpr);
+                            result.agregarHijo(new NodoArbol("?"));
+                            RESULT = result;
+:}
+| INTEGER_LITERAL:e1 {:
+                            NodoArbol result = new NodoArbol("int_literal", e1.toString());
+                            RESULT = result;
+:}
+| FLOAT_LITERAL:e1 {:
+                            NodoArbol result = new NodoArbol("float_literal", e1.toString());
+                            RESULT = result;
+:}
+| BOOLEAN_LITERAL:e1 {:
+                            NodoArbol result = new NodoArbol("bool_literal", e1.toString());
+                            RESULT = result;
+:}
+| CHAR_LITERAL:e1 {:
+                            NodoArbol result = new NodoArbol("char_literal", e1.toString());
+                            RESULT = result;
+:}
+| STRING_LITERAL:e1 {:
+                            NodoArbol result = new NodoArbol("string_literal", e1.toString());
+                            RESULT = result;
+:}
+| usoArray
+| llamadaFuncion
+;
+
+usoArray ::= IDENTIFIER:id LBRACKET expression:expr1 RBRACKET LBRACKET expression:expr2 RBRACKET {:
+                            NodoArbol result = new NodoArbol("array_access");
+                            result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                            result.agregarHijo(new NodoArbol("¡"));
+                            result.agregarHijo((NodoArbol)expr1);
+                            result.agregarHijo(new NodoArbol("!"));
+                            result.agregarHijo(new NodoArbol("¡"));
+                            result.agregarHijo((NodoArbol)expr2);
+                            result.agregarHijo(new NodoArbol("!"));
+                            RESULT = result;
+:};
+
+llamadaFuncion ::= IDENTIFIER:id LPAREN listaArgumentos:args RPAREN {:
+                            NodoArbol result = new NodoArbol("function_call");
+                            result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                            result.agregarHijo(new NodoArbol("¿"));
+                            if (args != null) {
+                                result.agregarHijo((NodoArbol)args);
+                            }
+                            result.agregarHijo(new NodoArbol("?"));
+                            RESULT = result;
+:};
+
+listaArgumentos ::= 
+            {: /* vacío */ RESULT = null; :}
+        | expression:expr {:
+                            NodoArbol result = new NodoArbol("listaArgumentos");
+                            result.agregarHijo((NodoArbol)expr);
+                            RESULT = result;
+:}
+        | listaArgumentos:args COMMA expression:expr {:
+                            NodoArbol result = new NodoArbol("listaArgumentos");
+                            result.agregarHijo((NodoArbol)args);
+                            result.agregarHijo(new NodoArbol("COMMA"));
+                            result.agregarHijo((NodoArbol)expr);
+                            RESULT = result;
+:};
