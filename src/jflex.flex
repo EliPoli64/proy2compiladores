@@ -121,6 +121,7 @@ Identificador     = [a-zA-Z_][a-zA-Z0-9_]*
   "¡"             { return symbol(sym.LBRACKET); }
   "!"             { return symbol(sym.RBRACKET); }
   "endl"          { return symbol(sym.ENDL); }
+  ";"             { return symbol(sym.SEMI); }
   
 
   /* control structures */
@@ -136,9 +137,10 @@ Identificador     = [a-zA-Z_][a-zA-Z0-9_]*
   "break"                   { return symbol(sym.BREAK); }
   "to"                      { return symbol(sym.TO); }
   "local"                   { return symbol(sym.LOCAL); }
+  "->"                      { return symbol(sym.ARROW); }
 
   /* identifiers */ 
-  {Identificador}                   { return symbol(sym.IDENTIFIER); }
+  {Identificador}                   { return symbol(sym.IDENTIFIER, yytext()); }
 
   /* comments */
   {EndOfLineComment}     { /* ignore */ }

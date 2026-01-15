@@ -3,18 +3,65 @@ import java.util.HashMap;
 import java.util.ArrayList;
 
 action code {:
-    HashMap<String, ArrayList<String>> listaTablasSimbolos = new HashMap<String, ArrayList<String>>();
-    String currentHash;
+    // Clase interna para representar un símbolo
+    class Simbolo {
+        String nombre;
+        String tipo;
+        String rol;
+        String ambito;
 
-    public void imprimirTablaSimbolos() {
-        System.out.println("Tablas de Simbolos");
-        for (String hash : listaTablasSimbolos.keySet()) {
-            System.out.println("Tabla de simbolo: " + hash);
-            ArrayList<String> simbolos = listaTablasSimbolos.get(hash);
-            for (String simbolo : simbolos) {
-                System.out.println("  " + simbolo);
+        public Simbolo(String nombre, String tipo, String rol, String ambito) {
+            this.nombre = nombre;
+            this.tipo = tipo;
+            this.rol = rol;
+            this.ambito = ambito;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%-15s %-15s %-15s %-15s", nombre, tipo, rol, ambito);
+        }
+    }
+
+    // Tabla de símbolos: Key = Nombre del ámbito, Value = Lista de símbolos en ese ámbito
+    HashMap<String, ArrayList<Simbolo>> listaTablasSimbolos = new HashMap<String, ArrayList<Simbolo>>();
+    
+    String currentScope = "Global"; // Ámbito actual
+
+    // Método para agregar un símbolo a la tabla del ámbito actual
+    public void agregarSimbolo(String nombre, String tipo, String rol) {
+        if (!listaTablasSimbolos.containsKey(currentScope)) {
+            listaTablasSimbolos.put(currentScope, new ArrayList<Simbolo>());
+        }
+        
+        // Verificar si ya existe en el ámbito actual para no duplicar (opcional, por ahora solo agregamos)
+        ArrayList<Simbolo> simbolosScope = listaTablasSimbolos.get(currentScope);
+        
+        // Validacion simple de duplicados
+        for(Simbolo s : simbolosScope){
+            if(s.nombre.equals(nombre)){
+                System.err.println("Advertencia: Simbolo '" + nombre + "' re-declarado en ambito " + currentScope);
+                return;
+                // O lanzar error si se desea estricto
             }
         }
+        
+        simbolosScope.add(new Simbolo(nombre, tipo, rol, currentScope));
+        System.out.println("Simbolo agregado: " + nombre + " [" + tipo + "] (" + rol + ") en " + currentScope);
+    }
+
+    public void imprimirTablaSimbolos() {
+        System.out.println("\n=== TABLAS DE SIMBOLOS ===");
+        for (String ambito : listaTablasSimbolos.keySet()) {
+            System.out.println("\nAmbito: " + ambito);
+            System.out.println(String.format("%-15s %-15s %-15s %-15s", "NOMBRE", "TIPO", "ROL", "AMBITO"));
+            System.out.println("----------------------------------------------------------------");
+            ArrayList<Simbolo> simbolos = listaTablasSimbolos.get(ambito);
+            for (Simbolo s : simbolos) {
+                System.out.println(s);
+            }
+        }
+        System.out.println("==========================\n");
     }
 :};
 
@@ -22,21 +69,56 @@ parser code {:
     LexerProyUno s;
     public parser(LexerProyUno s) {
         super(s);
+        this.s = s;
         this.symbolFactory = new DefaultSymbolFactory();
+    }
+
+    public void imprimirTablaSimbolos() {
+        action_obj.imprimirTablaSimbolos();
+    }
+
+    /* Sobreescribir el manejo de errores para mostrar mensajes más detallados */
+    /* Sobreescribir el manejo de errores para mostrar mensajes más detallados */
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error Sintactico");
+        if (info instanceof java_cup.runtime.Symbol) {
+            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+            if (s.left >= 0) {
+                m.append(" en linea " + (s.left+1));
+                if (s.right >= 0)
+                    m.append(", columna " + (s.right+1));
+            }
+            if (s.value != null) {
+                m.append(" (Token: " + s.value + ")");
+            }
+        }
+        m.append(" : " + message);
+        System.err.println(m);
+    }
+
+    public void report_fatal_error(String message, Object info) {
+        report_error("Error Fatal: " + message, info);
+        throw new RuntimeException("Error Fatal de Compilacion: " + message);
+    }
+
+    public void syntax_error(java_cup.runtime.Symbol cur_token) {
+        report_error("Error de sintaxis", cur_token);
     }
 :}
 
 scan with {: return s.next_token(); :};
 
-terminal SEMI, COMMA, ASSIGN, PLUS, MINUS, TIMES, DIV_INT, DIV_FLOAT, MOD, POW, INC, DEC;
+terminal SEMI, COMMA, ASSIGN, PLUS, MINUS, TIMES, DIV_INT, DIV_FLOAT, MOD, POW, INC, DEC, COLON;
 terminal LT, LE, GT, GE, EQ, NE, AND, OR, NOT;
 terminal LPAREN, RPAREN, LBRACKET, RBRACKET, ENDL;
 
 terminal NAVIDAD, COAL, GIFT, WORLD, LOCAL, INT, FLOAT, BOOL, CHAR, STRING, VOID;
-terminal SHOW, GET, DECIDE, OF, ELSE, END, LOOP, EXIT, WHEN, FOR, RETURN, BREAK;
+terminal SHOW, GET, DECIDE, OF, ELSE, END, LOOP, EXIT, WHEN, FOR, RETURN, BREAK, TO, ARROW;
 
 terminal Integer INTEGER_LITERAL;
 terminal Double FLOAT_LITERAL;
+
+
 terminal Boolean BOOLEAN_LITERAL;
 terminal Character CHAR_LITERAL;
 terminal String STRING_LITERAL, IDENTIFIER;
@@ -88,6 +170,8 @@ program ::= globales:g funciones:f navidad:n {:
 globales ::= 
             {: 
                 NodoArbol result = new NodoArbol("globales");
+                // Asegurar scope global
+                currentScope = "Global";
                 RESULT = result;
             :}
           | globales:g WORLD declaracionVariable:dv ENDL {:
@@ -98,9 +182,13 @@ globales ::=
                 result.agregarHijo(new NodoArbol("ENDL"));
                 RESULT = result;
           :}
+          | globales error ENDL {: 
+                System.err.println("Recuperado de error en globales."); 
+                RESULT = new NodoArbol("error_global");
+          :}
           ;
 
-navidad ::= COAL NAVIDAD LPAREN RPAREN bloque:b {:
+navidad ::= COAL NAVIDAD LPAREN RPAREN {: currentScope = "Navidad"; :} bloque:b {:
                 NodoArbol result = new NodoArbol("navidad");
                 result.agregarHijo(new NodoArbol("COAL"));
                 result.agregarHijo(new NodoArbol("NAVIDAD"));
@@ -123,7 +211,10 @@ funciones ::= funcion:f {:
               :}
             ;
 
-funcion ::= GIFT tipo:t IDENTIFIER:id parametros:p bloque:b ENDL {:
+funcion ::= GIFT tipo:t IDENTIFIER:id {: 
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Funcion"); 
+                currentScope = id.toString(); 
+              :} parametros:p bloque:b ENDL {:
                 NodoArbol result = new NodoArbol("funcion");
                 result.agregarHijo(new NodoArbol("GIFT"));
                 result.agregarHijo((NodoArbol)t);
@@ -131,6 +222,8 @@ funcion ::= GIFT tipo:t IDENTIFIER:id parametros:p bloque:b ENDL {:
                 result.agregarHijo((NodoArbol)p);
                 result.agregarHijo((NodoArbol)b);
                 result.agregarHijo(new NodoArbol("ENDL"));
+                // Al terminar, volver a global (o mejorar manejo de pila scopes)
+                currentScope = "Global";
                 RESULT = result;
           :};
 
@@ -153,6 +246,7 @@ listaParametros ::= tipo:ti IDENTIFIER:id {:
                         NodoArbol result = new NodoArbol("listaParametros");
                         result.agregarHijo((NodoArbol)ti);
                         result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                        agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
                         RESULT = result;
 :};
 
@@ -162,6 +256,7 @@ listaParametros ::= listaParametros:lp COMMA tipo:ti IDENTIFIER:id {:
                         result.agregarHijo(new NodoArbol("COMMA"));
                         result.agregarHijo((NodoArbol)ti);
                         result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                        agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
                         RESULT = result;
 :};
 
@@ -259,12 +354,10 @@ instruccion ::= declaracionVariable:dv ENDL {:
                 result.agregarHijo(new NodoArbol("ENDL"));
                 RESULT = result;
               :}
-              | SHOW LPAREN expression:e RPAREN ENDL {:
+              | SHOW expression:e ENDL {:
                 NodoArbol result = new NodoArbol("instruccion_show");
                 result.agregarHijo(new NodoArbol("SHOW"));
-                result.agregarHijo(new NodoArbol("LPAREN"));
                 result.agregarHijo((NodoArbol)e);
-                result.agregarHijo(new NodoArbol("RPAREN"));
                 result.agregarHijo(new NodoArbol("ENDL"));
                 RESULT = result;
               :}
@@ -316,6 +409,10 @@ instruccion ::= declaracionVariable:dv ENDL {:
                 result.agregarHijo(new NodoArbol("ENDL"));
                 RESULT = result;
               :}
+              | error ENDL {: 
+                  System.err.println("Recuperado de error en instruccion."); 
+                  RESULT = new NodoArbol("error_instruccion");
+              :}
               ;
 
 declaracionVariable ::= LOCAL tipo:t IDENTIFIER:id {:
@@ -323,6 +420,7 @@ declaracionVariable ::= LOCAL tipo:t IDENTIFIER:id {:
                 result.agregarHijo(new NodoArbol("LOCAL"));
                 result.agregarHijo((NodoArbol)t);
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Variable Local");
                 RESULT = result;
               :}
               | LOCAL tipo:t IDENTIFIER:id ASSIGN expression:e {:
@@ -332,12 +430,14 @@ declaracionVariable ::= LOCAL tipo:t IDENTIFIER:id {:
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
                 result.agregarHijo(new NodoArbol("ASSIGN"));
                 result.agregarHijo((NodoArbol)e);
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Variable Local");
                 RESULT = result;
               :}
               | tipo:t IDENTIFIER:id {:
                 NodoArbol result = new NodoArbol("declaracionVariable");
                 result.agregarHijo((NodoArbol)t);
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Variable");
                 RESULT = result;
               :}
               | tipo:t IDENTIFIER:id ASSIGN expression:e {:
@@ -346,6 +446,7 @@ declaracionVariable ::= LOCAL tipo:t IDENTIFIER:id {:
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
                 result.agregarHijo(new NodoArbol("ASSIGN"));
                 result.agregarHijo((NodoArbol)e);
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Variable");
                 RESULT = result;
               :}
               ;
@@ -359,6 +460,7 @@ declaracionArray ::= LOCAL tipo:t IDENTIFIER:id ASSIGN LBRACKET arrayInit:ai RBR
                 result.agregarHijo(new NodoArbol("LBRACKET"));
                 result.agregarHijo((NodoArbol)ai);
                 result.agregarHijo(new NodoArbol("RBRACKET"));
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Arreglo Local");
                 RESULT = result;
               :}
               | tipo:t IDENTIFIER:id ASSIGN LBRACKET arrayInit:ai RBRACKET {:
@@ -369,6 +471,7 @@ declaracionArray ::= LOCAL tipo:t IDENTIFIER:id ASSIGN LBRACKET arrayInit:ai RBR
                 result.agregarHijo(new NodoArbol("LBRACKET"));
                 result.agregarHijo((NodoArbol)ai);
                 result.agregarHijo(new NodoArbol("RBRACKET"));
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Arreglo");
                 RESULT = result;
               :}
               ;
@@ -387,12 +490,13 @@ arrayInit ::= expression:e {:
               :}
             ;
 
-decide ::= DECIDE OF condicionesDecide:cd ELSE bloque:b END DECIDE ENDL {:
+decide ::= DECIDE OF condicionesDecide:cd ELSE ARROW bloque:b END DECIDE ENDL {:
                 NodoArbol result = new NodoArbol("decide_with_else");
                 result.agregarHijo(new NodoArbol("DECIDE"));
                 result.agregarHijo(new NodoArbol("OF"));
                 result.agregarHijo((NodoArbol)cd);
                 result.agregarHijo(new NodoArbol("ELSE"));
+                result.agregarHijo(new NodoArbol("ARROW"));
                 result.agregarHijo((NodoArbol)b);
                 result.agregarHijo(new NodoArbol("END"));
                 result.agregarHijo(new NodoArbol("DECIDE"));
@@ -424,9 +528,10 @@ condicionesDecide ::= condicionDecide:cd {:
               :}
                     ;
 
-condicionDecide ::= expression:e bloque:b {:
+condicionDecide ::= expression:e ARROW bloque:b {:
                 NodoArbol result = new NodoArbol("condicionDecide");
                 result.agregarHijo((NodoArbol)e);
+                result.agregarHijo(new NodoArbol("ARROW"));
                 result.agregarHijo((NodoArbol)b);
                 RESULT = result;
               :};
@@ -643,6 +748,10 @@ expression ::= expression:e1 PLUS expression:e2 {:
 :}
 | usoArray
 | llamadaFuncion
+| IDENTIFIER:id {:
+    NodoArbol result = new NodoArbol("IDENTIFIER", id.toString());
+    RESULT = result;
+:}
 ;
 
 usoArray ::= IDENTIFIER:id LBRACKET expression:expr1 RBRACKET LBRACKET expression:expr2 RBRACKET {:

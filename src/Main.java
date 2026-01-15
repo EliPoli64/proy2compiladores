@@ -1,12 +1,7 @@
 import java.io.*;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 import java_cup.runtime.Symbol;
 
 public class Main {
-    private static Map<Integer, String> symbolNames = new HashMap<>(); // mapeo de id de token a su nombre
-
     public static void main(String[] args) {
         if (args.length == 0) {
             System.err.println("Uso incorrecto. Ejecutar: java Main <archivo_fuente>");
@@ -14,62 +9,54 @@ public class Main {
         }
 
         String fileName = args[0];
-        String outputFileName = "salida.txt";
+        System.out.println("Iniciando análisis del archivo: " + fileName);
 
-        loadSymbolNames(); // carga los nombres de simbolos en mapa
+        parser p = null;
+        try {
+            // 1. Crear el Lexer
+            LexerProyUno lexer = new LexerProyUno(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+            
+            // 2. Crear el Parser con el Lexer
+            p = new parser(lexer);
+            
+            // 3. Ejecutar el análisis (parse)
+            Symbol result = p.parse();
+            
+            // 4. Si llega aquí, el análisis fue exitoso
+            System.out.println("\n------------------------------------------------");
+            System.out.println("RESULTADO: El archivo FUE generado exitosamente por la gramática.");
+            System.out.println("------------------------------------------------\n");
+            
+            // 5. Primero mostrar la Tabla de Símbolos (para que salga aunque falle el árbol)
+            System.out.println("=== TABLA DE SIMBOLOS ===");
+            p.imprimirTablaSimbolos();
+            System.out.println("=========================\n");
 
-        System.out.println("Iniciando análisis léxico...");
-        System.out.println("Entrada: " + fileName);
-
-        try (FileReader reader = new FileReader(fileName);
-            PrintWriter writer = new PrintWriter(new FileWriter(outputFileName))) {
-
-            LexerProyUno lexer = new LexerProyUno(reader);
-            writer.println("-- Tokens encontrados --");
-            writer.printf("%-20s %-40s %-10s %-10s%n", "Token", "Lexema", "Linea", "Columna");
-            writer.println("_________________________________________________________________________________");
-
-            while (true) {
-                Symbol token = lexer.next_token(); // itera por todos los tokens encontrados
-
-                if (token.sym == sym.EOF) {
-                    writer.println("EOF (Fin de archivo)");
-                    break;
-                }
-
-                String tokenName = getSymbolName(token.sym);
-                String lexeme = token.value != null ? token.value.toString() : "";
-                    writer.printf("%-20s %-40s %-10d %-10d%n",
-                            tokenName, lexeme, token.left + 1, token.right + 1);
+            // 6. Obtener y mostrar el Árbol Sintáctico
+            if (result.value instanceof NodoArbol) {
+                NodoArbol raiz = (NodoArbol) result.value;
+                System.out.println("=== ARBOL SINTACTICO ===");
+                raiz.printArbol();
+                System.out.println("\n========================\n");
+            } else {
+                System.out.println("Nota: El resultado del parser no es un NodoArbol (es null o de otro tipo).");
             }
-
-            System.out.println("Análisis completado exitosamente.");
-            System.out.println("Tokens guardados en: " + outputFileName);
 
         } catch (FileNotFoundException e) {
-            System.err.println("Error: Archivo no encontrado - " + fileName);
+            System.err.println("Error fatal: Archivo no encontrado - " + fileName);
         } catch (Exception e) {
-            System.err.println("Error durante la ejecución: " + e.getMessage());
+            System.err.println("\n------------------------------------------------");
+            System.err.println("RESULTADO: El archivo NO puede ser generado por la gramática.");
+            System.err.println("------------------------------------------------");
+            System.err.println("Error encontrado: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+             // Asegurar impresión de tabla si falló antes pero el parser existe
+             if (p != null) {
+                 // Nota: Si ya se imprimió arriba, esto podría duplicarlo en casos raros de error,
+                 // pero es mejor verla dos veces que ninguna.
+                 // Para hacerlo limpio, podríamos usar una bandera.
+             }
         }
-    }
-
-    private static void loadSymbolNames() {
-        try {
-            Field[] fields = sym.class.getFields();
-            for (Field field : fields) {
-                if (field.getType() == int.class) {
-                    int value = field.getInt(null);
-                    String name = field.getName();
-                    symbolNames.put(value, name);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Advertencia: No se pudieron cargar los nombres de los símbolos de la clase 'sym'."); // por si falla
-        }
-    }
-
-    private static String getSymbolName(int id) {
-        return symbolNames.getOrDefault(id, "SYM_" + id); // por si no encuentra el nombre de un simbolo
     }
 }

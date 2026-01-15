@@ -21,7 +21,9 @@ public class NodoArbol {
     this.hijos = new ArrayList<NodoArbol>();
   }
   public void agregarHijo(NodoArbol hijo) {
-    this.hijos.add(hijo);
+    if (hijo != null) {
+        this.hijos.add(hijo);
+    }
   }
   public String getTipo() {
     return this.tipo;
@@ -46,7 +48,9 @@ public class NodoArbol {
     } else {
       System.out.print("(" + this.tipo + " ");
       for (NodoArbol hijo : this.hijos) {
-        hijo.printArbol();
+        if (hijo != null) {
+            hijo.printArbol();
+        }
       }
       System.out.print(") ");
     }
