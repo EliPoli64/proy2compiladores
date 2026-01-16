@@ -91,6 +91,8 @@ Identificador     = [a-zA-Z_][a-zA-Z0-9_]*
   ","                 { return symbol(sym.COMMA); }
   "¡"                 { return symbol(sym.LBRACKET); }
   "!"                 { return symbol(sym.RBRACKET); }
+  "["                 { return symbol(sym.DECLBRACKETL, yytext()); }
+  "]"                 { return symbol(sym.DECLBRACKETR, yytext()); }
   "endl"              { return symbol(sym.ENDL); }
 
   \'                  { string.setLength(0); yybegin(CHAR); }

@@ -27,6 +27,7 @@ action code {:
     HashMap<String, ArrayList<Simbolo>> listaTablasSimbolos = new HashMap<String, ArrayList<Simbolo>>();
     
     String currentScope = "Global"; // Ámbito actual
+    ArrayList<String> scopeStack = new ArrayList<String>(); // Pila de ámbitos
 
     // Método para agregar un símbolo a la tabla del ámbito actual
     public void agregarSimbolo(String nombre, String tipo, String rol) {
@@ -63,15 +64,27 @@ action code {:
         }
         System.out.println("==========================\n");
     }
+
+    public String obtenerTablaSimbolosString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== TABLAS DE SIMBOLOS ===\n");
+        for (String ambito : listaTablasSimbolos.keySet()) {
+            sb.append("\nAmbito: ").append(ambito).append("\n");
+            sb.append(String.format("%-15s %-15s %-15s %-15s", "NOMBRE", "TIPO", "ROL", "AMBITO")).append("\n");
+            sb.append("----------------------------------------------------------------\n");
+            ArrayList<Simbolo> simbolos = listaTablasSimbolos.get(ambito);
+            for (Simbolo s : simbolos) {
+                sb.append(s).append("\n");
+            }
+        }
+        sb.append("==========================\n\n");
+        return sb.toString();
+    }
 :};
 
 parser code {:
     LexerProyUno s;
     public parser(LexerProyUno s) {
-<<<<<<< HEAD
-        super(s);
-=======
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
         this.s = s;
         this.symbolFactory = new DefaultSymbolFactory();
     }
@@ -80,7 +93,10 @@ parser code {:
         action_obj.imprimirTablaSimbolos();
     }
 
-    /* Sobreescribir el manejo de errores para mostrar mensajes más detallados */
+    public String obtenerTablaSimbolosString() {
+        return action_obj.obtenerTablaSimbolosString();
+    }
+
     /* Sobreescribir el manejo de errores para mostrar mensajes más detallados */
     public void report_error(String message, Object info) {
         StringBuilder m = new StringBuilder("Error Sintactico");
@@ -113,7 +129,7 @@ scan with {: return s.next_token(); :};
 
 terminal SEMI, COMMA, ASSIGN, PLUS, MINUS, TIMES, DIV_INT, DIV_FLOAT, MOD, POW, INC, DEC, COLON;
 terminal LT, LE, GT, GE, EQ, NE, AND, OR, NOT;
-terminal LPAREN, RPAREN, LBRACKET, RBRACKET, DECLBRACKETL, DECLBRACKETR, ENDL, ARROW;
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, DECLBRACKETL, DECLBRACKETR, ENDL;
 
 terminal NAVIDAD, COAL, GIFT, WORLD, LOCAL, INT, FLOAT, BOOL, CHAR, STRING, VOID;
 terminal SHOW, GET, DECIDE, OF, ELSE, END, LOOP, EXIT, WHEN, FOR, RETURN, BREAK, TO, ARROW;
@@ -185,6 +201,7 @@ globales ::=
                 result.agregarHijo(new NodoArbol("STRING"));
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
                 result.agregarHijo(new NodoArbol("ENDL"));
+                agregarSimbolo(id.toString(), "string", "Variable Global");
                 RESULT = result;
           :}
           | globales error ENDL {: 
@@ -193,11 +210,7 @@ globales ::=
           :}
           ;
 
-<<<<<<< HEAD
-navidad ::= COAL NAVIDAD LPAREN RPAREN {: currentScope = "Navidad"; :} bloque:b {:
-=======
 navidad ::= COAL NAVIDAD LPAREN RPAREN LBRACKET RETURN expression:e ENDL RBRACKET {:
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
                 NodoArbol result = new NodoArbol("navidad");
                 result.agregarHijo(new NodoArbol("COAL"));
                 result.agregarHijo(new NodoArbol("NAVIDAD"));
@@ -224,14 +237,7 @@ funciones ::= funcion:f {:
               :}
             ;
 
-<<<<<<< HEAD
-funcion ::= GIFT tipo:t IDENTIFIER:id {: 
-                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Funcion"); 
-                currentScope = id.toString(); 
-              :} parametros:p bloque:b ENDL {:
-=======
-funcion ::= GIFT tipo:t IDENTIFIER:id LPAREN parametros:p RPAREN bloque:b {:
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
+funcion ::= GIFT tipo:t IDENTIFIER:id {: currentScope = id.toString(); :} LPAREN parametros:p RPAREN bloque:b {:
                 NodoArbol result = new NodoArbol("funcion");
                 result.agregarHijo(new NodoArbol("GIFT"));
                 result.agregarHijo((NodoArbol)t);
@@ -240,12 +246,7 @@ funcion ::= GIFT tipo:t IDENTIFIER:id LPAREN parametros:p RPAREN bloque:b {:
                 result.agregarHijo((NodoArbol)p);
                 result.agregarHijo(new NodoArbol("RPAREN"));
                 result.agregarHijo((NodoArbol)b);
-<<<<<<< HEAD
-                result.agregarHijo(new NodoArbol("ENDL"));
-                // Al terminar, volver a global (o mejorar manejo de pila scopes)
                 currentScope = "Global";
-=======
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
                 RESULT = result;
           :} | IDENTIFIER:id LPAREN RPAREN {:
                 NodoArbol result = new NodoArbol("funcion_vacia");
@@ -267,27 +268,10 @@ parametros ::= {:
             ;
 
 listaParametros ::= tipo:ti IDENTIFIER:id {:
-<<<<<<< HEAD
-                        NodoArbol result = new NodoArbol("listaParametros");
-                        result.agregarHijo((NodoArbol)ti);
-                        result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
-                        agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
-                        RESULT = result;
-:};
-
-listaParametros ::= listaParametros:lp COMMA tipo:ti IDENTIFIER:id {:
-                        NodoArbol result = new NodoArbol("listaParametros");
-                        result.agregarHijo((NodoArbol)lp);
-                        result.agregarHijo(new NodoArbol("COMMA"));
-                        result.agregarHijo((NodoArbol)ti);
-                        result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
-                        agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
-                        RESULT = result;
-:};
-=======
                 NodoArbol result = new NodoArbol("listaParametros");
                 result.agregarHijo((NodoArbol)ti);
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
                 RESULT = result;
               :}
             | listaParametros:lp COMMA tipo:ti IDENTIFIER:id {:
@@ -296,10 +280,10 @@ listaParametros ::= listaParametros:lp COMMA tipo:ti IDENTIFIER:id {:
                 result.agregarHijo(new NodoArbol("COMMA"));
                 result.agregarHijo((NodoArbol)ti);
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
                 RESULT = result;
               :}
             ;
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
 
 tipo ::= INT {: 
                 NodoArbol result = new NodoArbol("INT");
@@ -367,9 +351,6 @@ instruccion ::= declaracionVariable:dv ENDL {:
                 result.agregarHijo(new NodoArbol("ENDL"));
                 RESULT = result;
               :}
-<<<<<<< HEAD
-              | SHOW expression:e ENDL {:
-=======
             | expression:e ENDL {:
                 NodoArbol result = new NodoArbol("instruccion");
                 result.agregarHijo((NodoArbol)e);
@@ -377,7 +358,6 @@ instruccion ::= declaracionVariable:dv ENDL {:
                 RESULT = result;
               :}
             | SHOW LPAREN expression:e RPAREN ENDL {:
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
                 NodoArbol result = new NodoArbol("instruccion_show");
                 result.agregarHijo(new NodoArbol("SHOW"));
                 result.agregarHijo((NodoArbol)e);
@@ -418,15 +398,7 @@ instruccion ::= declaracionVariable:dv ENDL {:
                 result.agregarHijo(new NodoArbol("ENDL"));
                 RESULT = result;
               :}
-<<<<<<< HEAD
-              | error ENDL {: 
-                  System.err.println("Recuperado de error en instruccion."); 
-                  RESULT = new NodoArbol("error_instruccion");
-              :}
-              ;
-=======
             ;
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
 
 declaracionVariable ::= LOCAL tipo:t IDENTIFIER:id {:
                 NodoArbol result = new NodoArbol("declaracionVariable_local");
@@ -446,47 +418,20 @@ declaracionVariable ::= LOCAL tipo:t IDENTIFIER:id {:
                 agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Variable Local");
                 RESULT = result;
               :}
-<<<<<<< HEAD
-              | tipo:t IDENTIFIER:id {:
-                NodoArbol result = new NodoArbol("declaracionVariable");
-                result.agregarHijo((NodoArbol)t);
-                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
-                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Variable");
-                RESULT = result;
-              :}
-              | tipo:t IDENTIFIER:id ASSIGN expression:e {:
-                NodoArbol result = new NodoArbol("declaracionVariable_asign");
-                result.agregarHijo((NodoArbol)t);
-                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
-                result.agregarHijo(new NodoArbol("ASSIGN"));
-                result.agregarHijo((NodoArbol)e);
-                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Variable");
-                RESULT = result;
-              :}
-              ;
-=======
             ;
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
 
 declaracionArray ::= LOCAL tipo:t IDENTIFIER:id DECLBRACKETL INTEGER_LITERAL:i1 DECLBRACKETR DECLBRACKETL INTEGER_LITERAL:i2 DECLBRACKETR {:
                 NodoArbol result = new NodoArbol("declaracionArray_local_2d");
                 result.agregarHijo(new NodoArbol("LOCAL"));
                 result.agregarHijo((NodoArbol)t);
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
-<<<<<<< HEAD
-                result.agregarHijo(new NodoArbol("ASSIGN"));
-                result.agregarHijo(new NodoArbol("LBRACKET"));
-                result.agregarHijo((NodoArbol)ai);
-                result.agregarHijo(new NodoArbol("RBRACKET"));
-                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Arreglo Local");
-=======
                 result.agregarHijo(new NodoArbol("DECLBRACKETL"));
                 result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i1.toString()));
                 result.agregarHijo(new NodoArbol("DECLBRACKETR"));
                 result.agregarHijo(new NodoArbol("DECLBRACKETL"));
                 result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i2.toString()));
                 result.agregarHijo(new NodoArbol("DECLBRACKETR"));
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Array Local");
                 RESULT = result;
               :}
             | LOCAL tipo:t IDENTIFIER:id DECLBRACKETL INTEGER_LITERAL:i1 DECLBRACKETR DECLBRACKETL INTEGER_LITERAL:i2 DECLBRACKETR ASSIGN arrayInit:ai {:
@@ -502,11 +447,7 @@ declaracionArray ::= LOCAL tipo:t IDENTIFIER:id DECLBRACKETL INTEGER_LITERAL:i1 
                 result.agregarHijo(new NodoArbol("DECLBRACKETR"));
                 result.agregarHijo(new NodoArbol("ASSIGN"));
                 result.agregarHijo((NodoArbol)ai);
-<<<<<<< HEAD
-                result.agregarHijo(new NodoArbol("RBRACKET"));
-                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Arreglo");
-=======
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
+                agregarSimbolo(id.toString(), ((NodoArbol)t).getLexema(), "Array Local");
                 RESULT = result;
               :};
 
@@ -523,10 +464,6 @@ arrayValues ::= expression:e {:
                 RESULT = result;
               :}
             ;
-<<<<<<< HEAD
-
-decide ::= DECIDE OF condicionesDecide:cd ELSE ARROW bloque:b END DECIDE ENDL {:
-=======
 arrayInit ::= LBRACKET LBRACKET arrayValues:av1 RBRACKET COMMA LBRACKET arrayValues:av2 RBRACKET RBRACKET {:
                 NodoArbol result = new NodoArbol("arrayInit_2d");
                 result.agregarHijo(new NodoArbol("LBRACKET"));
@@ -549,7 +486,6 @@ decide ::= DECIDE OF condicionesDecide:cd END DECIDE {:
                 RESULT = result;
           :}
          | DECIDE OF condicionesDecide:cd ELSE ARROW bloque:b END DECIDE {:
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
                 NodoArbol result = new NodoArbol("decide_with_else");
                 result.agregarHijo(new NodoArbol("DECIDE"));
                 result.agregarHijo(new NodoArbol("OF"));
@@ -580,19 +516,7 @@ condicionesDecide ::= expression:e ARROW bloque:b {:
                 result.agregarHijo(condicion);
                 RESULT = result;
               :}
-<<<<<<< HEAD
-                    ;
-
-condicionDecide ::= expression:e ARROW bloque:b {:
-                NodoArbol result = new NodoArbol("condicionDecide");
-                result.agregarHijo((NodoArbol)e);
-                result.agregarHijo(new NodoArbol("ARROW"));
-                result.agregarHijo((NodoArbol)b);
-                RESULT = result;
-              :};
-=======
             ;
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
 
 loop ::= LOOP listaInstr:li EXIT WHEN expression:e ENDL END LOOP ENDL {:
                 NodoArbol result = new NodoArbol("loop");
@@ -612,7 +536,7 @@ for_stmt ::= FOR LPAREN declaracionVariable:e1 ENDL expression:e2 ENDL expressio
                 NodoArbol result = new NodoArbol("for_stmt");
                 result.agregarHijo(new NodoArbol("FOR"));
                 result.agregarHijo(new NodoArbol("LPAREN"));
-                result.agregarHijo((NodoArbol)e1);  // e1 ya tiene ENDL interno
+                result.agregarHijo((NodoArbol)e1);
                 result.agregarHijo((NodoArbol)e2);
                 result.agregarHijo(new NodoArbol("ENDL"));
                 result.agregarHijo((NodoArbol)e3);
@@ -622,194 +546,6 @@ for_stmt ::= FOR LPAREN declaracionVariable:e1 ENDL expression:e2 ENDL expressio
           :};
 
 expression ::= expression:e1 PLUS expression:e2 {:
-<<<<<<< HEAD
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("+");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 MINUS expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("-");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 GE expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol(">=");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 EQ expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("==");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 TIMES expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("*");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 DIV_INT expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("//");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 POW expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("^");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 LT expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("<");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 DIV_FLOAT expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("/");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 LE expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("<=");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 MOD expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("%");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 GT expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol(">");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 NE expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("!=");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 AND expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("@");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| expression:e1 OR expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("~");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| NOT expression:e1 {:
-                            NodoArbol hijoExpr = (NodoArbol)e1;
-                            NodoArbol result = new NodoArbol("Σ");
-                            result.agregarHijo(hijoExpr);
-                            RESULT = result;
-:}
-| MINUS expression:e1 {:
-                            NodoArbol hijoExpr = (NodoArbol)e1;
-                            NodoArbol result = new NodoArbol("MINUS");
-                            result.agregarHijo(hijoExpr);
-                            RESULT = result;
-:}
-| INC expression:e1 {:
-                            NodoArbol hijoExpr = (NodoArbol)e1;
-                            NodoArbol result = new NodoArbol("++");
-                            result.agregarHijo(hijoExpr);
-                            RESULT = result;
-:}
-| DEC expression:e1 {:
-                            NodoArbol hijoExpr = (NodoArbol)e1;
-                            NodoArbol result = new NodoArbol("--");
-                            result.agregarHijo(hijoExpr);
-                            RESULT = result;
-:}
-| expression:e1 ASSIGN expression:e2 {:
-                            NodoArbol hijoIzq = (NodoArbol)e1;
-                            NodoArbol hijoDer = (NodoArbol)e2;
-                            NodoArbol result = new NodoArbol("=");
-                            result.agregarHijo(hijoIzq);
-                            result.agregarHijo(hijoDer);
-                            RESULT = result;
-:}
-| LPAREN expression:e1 RPAREN {:
-                            NodoArbol hijoExpr = (NodoArbol)e1;
-                            NodoArbol result = new NodoArbol("()");
-                            result.agregarHijo(new NodoArbol("¿"));
-                            result.agregarHijo(hijoExpr);
-                            result.agregarHijo(new NodoArbol("?"));
-                            RESULT = result;
-:}
-| INTEGER_LITERAL:e1 {:
-                            NodoArbol result = new NodoArbol("int_literal", e1.toString());
-                            RESULT = result;
-:}
-| FLOAT_LITERAL:e1 {:
-                            NodoArbol result = new NodoArbol("float_literal", e1.toString());
-                            RESULT = result;
-:}
-| BOOLEAN_LITERAL:e1 {:
-                            NodoArbol result = new NodoArbol("bool_literal", e1.toString());
-                            RESULT = result;
-:}
-| CHAR_LITERAL:e1 {:
-                            NodoArbol result = new NodoArbol("char_literal", e1.toString());
-                            RESULT = result;
-:}
-| STRING_LITERAL:e1 {:
-                            NodoArbol result = new NodoArbol("string_literal", e1.toString());
-                            RESULT = result;
-:}
-| usoArray
-| llamadaFuncion
-| IDENTIFIER:id {:
-    NodoArbol result = new NodoArbol("IDENTIFIER", id.toString());
-    RESULT = result;
-:}
-;
-=======
                 NodoArbol hijoIzq = (NodoArbol)e1;
                 NodoArbol hijoDer = (NodoArbol)e2;
                 NodoArbol result = new NodoArbol("+");
@@ -1001,7 +737,6 @@ expression ::= expression:e1 PLUS expression:e2 {:
             | usoArray
             | llamadaFuncion
             ;
->>>>>>> d29f9675dad60fb9736e0ebc71a23039960f3c6f
 
 usoArray ::= IDENTIFIER:id DECLBRACKETL expression:expr1 DECLBRACKETR DECLBRACKETL expression:expr2 DECLBRACKETR {:
                 NodoArbol result = new NodoArbol("array_access_2d");
