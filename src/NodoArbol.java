@@ -41,18 +41,48 @@ public class NodoArbol {
     this.tipo = tipo;
   }
 
+  public String getArbolString() {
+    StringBuilder sb = new StringBuilder();
+    getArbolStringHelper(sb);
+    return sb.toString();
+  }
 
-  public void printArbol() {
+  private void getArbolStringHelper(StringBuilder sb) {
     if (this.hijos.size() == 0) {
-      System.out.print(this.tipo + " ");
+      sb.append(this.tipo).append(" ");
     } else {
-      System.out.print("(" + this.tipo + " ");
+      sb.append("(").append(this.tipo).append(" ");
       for (NodoArbol hijo : this.hijos) {
         if (hijo != null) {
-            hijo.printArbol();
+            hijo.getArbolStringHelper(sb);
         }
       }
-      System.out.print(") ");
+      sb.append(") ");
+    }
+  }
+
+  public String getArbolPrettyString() {
+    StringBuilder sb = new StringBuilder();
+    getArbolPrettyStringHelper(sb, "", true);
+    return sb.toString();
+  }
+
+  private void getArbolPrettyStringHelper(StringBuilder sb, String prefix, boolean isLast) {
+    String connector = isLast ? "└── " : "├── ";
+    sb.append(prefix).append(connector).append(this.tipo);
+    if (!this.lexema.isEmpty()) {
+      sb.append(" [").append(this.lexema).append("]");
+    }
+    sb.append("\n");
+    
+    String newPrefix = prefix + (isLast ? "    " : "│   ");
+    
+    for (int i = 0; i < this.hijos.size(); i++) {
+      NodoArbol hijo = this.hijos.get(i);
+      if (hijo != null) {
+        boolean isLastChild = (i == this.hijos.size() - 1);
+        hijo.getArbolPrettyStringHelper(sb, newPrefix, isLastChild);
+      }
     }
   }
 
