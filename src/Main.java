@@ -28,16 +28,20 @@ public class Main {
             System.out.println("------------------------------------------------\n");
             
             // 5. Primero mostrar la Tabla de Símbolos (para que salga aunque falle el árbol)
-            System.out.println("=== TABLA DE SIMBOLOS ===");
             p.imprimirTablaSimbolos();
-            System.out.println("=========================\n");
+            
+            String tablaSimbolosContent = p.obtenerTablaSimbolosString();
+            guardarEnArchivo("tablaSimbolos.txt", tablaSimbolosContent);
+            System.out.println("Tabla de símbolos guardada en: tablaSimbolos.txt");
 
             // 6. Obtener y mostrar el Árbol Sintáctico
             if (result.value instanceof NodoArbol) {
-                NodoArbol raiz = (NodoArbol) result.value;
-                System.out.println("=== ARBOL SINTACTICO ===");
-                raiz.printArbol();
-                System.out.println("\n========================\n");
+                NodoArbol raiz = (NodoArbol) result.value;                
+                String arbolContent = raiz.getArbolPrettyString();
+                System.out.println("Árbol Sintáctico:");
+                System.out.println(arbolContent);
+                guardarEnArchivo("arbol.txt", arbolContent);
+                System.out.println("Árbol sintáctico guardado en: arbol.txt");
             } else {
                 System.out.println("Nota: El resultado del parser no es un NodoArbol (es null o de otro tipo).");
             }
@@ -51,12 +55,15 @@ public class Main {
             System.err.println("Error encontrado: " + e.getMessage());
             e.printStackTrace();
         } finally {
-             // Asegurar impresión de tabla si falló antes pero el parser existe
-             if (p != null) {
-                 // Nota: Si ya se imprimió arriba, esto podría duplicarlo en casos raros de error,
-                 // pero es mejor verla dos veces que ninguna.
-                 // Para hacerlo limpio, podríamos usar una bandera.
-             }
+            System.out.println("\nEjecucion finalizada");
+        }
+    }
+
+    private static void guardarEnArchivo(String nombreArchivo, String contenido) {
+        try (FileWriter writer = new FileWriter(nombreArchivo)) {
+            writer.write(contenido);
+        } catch (IOException e) {
+            System.err.println("Error al guardar archivo " + nombreArchivo + ": " + e.getMessage());
         }
     }
 }
