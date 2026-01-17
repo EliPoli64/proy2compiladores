@@ -187,21 +187,20 @@ program ::= globales:g funciones:f navidad:n {:
     RESULT = result;
 :};
 
-globales ::= 
-            {: 
+globales ::= {: 
                 NodoArbol result = new NodoArbol("globales");
                 // Asegurar scope global
                 currentScope = "Global";
                 RESULT = result;
             :}
-          | globales:g WORLD STRING IDENTIFIER:id ENDL {:
+          | globales:g WORLD tipo:ti IDENTIFIER:id ENDL {:
                 NodoArbol result = new NodoArbol("globales");
                 result.agregarHijo((NodoArbol)g);
                 result.agregarHijo(new NodoArbol("WORLD"));
-                result.agregarHijo(new NodoArbol("STRING"));
+                result.agregarHijo((NodoArbol)ti);
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
                 result.agregarHijo(new NodoArbol("ENDL"));
-                agregarSimbolo(id.toString(), "string", "Variable Global");
+                agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Variable Global");
                 RESULT = result;
           :}
           | globales error ENDL {: 
@@ -210,13 +209,14 @@ globales ::=
           :}
           ;
 
-navidad ::= COAL NAVIDAD LPAREN RPAREN LBRACKET RETURN expression:e ENDL RBRACKET {:
+navidad ::= COAL NAVIDAD LPAREN RPAREN LBRACKET listaInstr:li RETURN expression:e ENDL RBRACKET {:
                 NodoArbol result = new NodoArbol("navidad");
                 result.agregarHijo(new NodoArbol("COAL"));
                 result.agregarHijo(new NodoArbol("NAVIDAD"));
                 result.agregarHijo(new NodoArbol("LPAREN"));
                 result.agregarHijo(new NodoArbol("RPAREN"));
                 result.agregarHijo(new NodoArbol("LBRACKET"));
+                result.agregarHijo((NodoArbol)li);
                 result.agregarHijo(new NodoArbol("RETURN"));
                 result.agregarHijo((NodoArbol)e);
                 result.agregarHijo(new NodoArbol("ENDL"));
@@ -274,6 +274,19 @@ listaParametros ::= tipo:ti IDENTIFIER:id {:
                 agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
                 RESULT = result;
               :}
+            | tipo:ti IDENTIFIER:id DECLBRACKETL INTEGER_LITERAL:i1 DECLBRACKETR DECLBRACKETL INTEGER_LITERAL:i2 DECLBRACKETR {:
+                NodoArbol result = new NodoArbol("listaParametros");
+                result.agregarHijo((NodoArbol)ti);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo(new NodoArbol("DECLBRACKETL"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i1.toString()));
+                result.agregarHijo(new NodoArbol("DECLBRACKETR"));
+                result.agregarHijo(new NodoArbol("DECLBRACKETL"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i2.toString()));
+                result.agregarHijo(new NodoArbol("DECLBRACKETR"));
+                agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro Array");
+                RESULT = result;
+              :}
             | listaParametros:lp COMMA tipo:ti IDENTIFIER:id {:
                 NodoArbol result = new NodoArbol("listaParametros");
                 result.agregarHijo((NodoArbol)lp);
@@ -281,6 +294,21 @@ listaParametros ::= tipo:ti IDENTIFIER:id {:
                 result.agregarHijo((NodoArbol)ti);
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
                 agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro");
+                RESULT = result;
+              :}
+            | listaParametros:lp COMMA tipo:ti IDENTIFIER:id DECLBRACKETL INTEGER_LITERAL:i1 DECLBRACKETR DECLBRACKETL INTEGER_LITERAL:i2 DECLBRACKETR {:
+                NodoArbol result = new NodoArbol("listaParametros");
+                result.agregarHijo((NodoArbol)lp);
+                result.agregarHijo(new NodoArbol("COMMA"));
+                result.agregarHijo((NodoArbol)ti);
+                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
+                result.agregarHijo(new NodoArbol("DECLBRACKETL"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i1.toString()));
+                result.agregarHijo(new NodoArbol("DECLBRACKETR"));
+                result.agregarHijo(new NodoArbol("DECLBRACKETL"));
+                result.agregarHijo(new NodoArbol("INTEGER_LITERAL", i2.toString()));
+                result.agregarHijo(new NodoArbol("DECLBRACKETR"));
+                agregarSimbolo(id.toString(), ((NodoArbol)ti).getLexema(), "Parametro Array");
                 RESULT = result;
               :}
             ;
@@ -682,18 +710,8 @@ expression ::= expression:e1 PLUS expression:e2 {:
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
                 RESULT = result;
             :}
-            | IDENTIFIER:id INC {:
-                NodoArbol result = new NodoArbol("++_post");
-                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
-                RESULT = result;
-            :}
             | DEC IDENTIFIER:id {:
                 NodoArbol result = new NodoArbol("--_pre");
-                result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
-                RESULT = result;
-            :}
-            | IDENTIFIER:id DEC {:
-                NodoArbol result = new NodoArbol("--_post");
                 result.agregarHijo(new NodoArbol("IDENTIFIER", id.toString()));
                 RESULT = result;
             :}
